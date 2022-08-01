@@ -48,7 +48,6 @@ file.close()
 crea = infoPartCmd.infoPartUI.makePartInfo
 fill = infoPartCmd.infoPartUI.infoDefault
 refresh = infoPartCmd.infoPartUI.refreshSizeInfo
-reset = infoPartCmd.infoPartUI.resetCountingAttr
 
 
 """
@@ -105,69 +104,54 @@ class makeBOM:
         self.BOM.clear()
         self.Verbose=str()
         self.PartsList = {}
-        ################################### Edited by Ediforce44 #########################################
-        # Overwrites user input for the attributes size etc. of an Object
-        # - So it is possible to use variables for lengths and the BOM hand in hand
-        self.resetCountingInfos(self.model)
-        self.calculatePartInfo(self.model)
-        ##################################################################################################
         self.listParts(self.model)
         self.inSpreadsheet()
         self.BOM.setPlainText(self.Verbose)
 
 ### def listParts use of Part info Edit
+    def extendAttrDict(self, dictMain, dictExtension):
+        for objectName in dictExtension:
+            if objectName in dictMain:
+                dictMain[objectName] += dictExtension[objectName]
+            else:
+                dictMain[objectName] = dictExtension[objectName]
 
-    def resetCountingInfos(self, object, level=0):
-        # Reset Quantity attribute
-        if object.TypeId=='App::Link':
-            self.resetCountingInfos(object.LinkedObject,level+1)
-        else:
-            if object.TypeId=='App::Part':
-                if level > 0:
-                    if hasattr(object,'Quantity'):
-                        reset(object)
-                # look for sub-objects
-                for objname in object.getSubObjects():
-                    subobj = object.Document.getObject( objname[0:-1] )
-                    self.resetCountingInfos(subobj,level+1)
-        return
-
-    def calculatePartInfo(self,object,level=0):
-        file = open(ConfUserFilejson, 'r')
-        self.infoKeysUser = json.load(file).copy()
-        file.close()
-        if object == None:
-            return
-        # research App::Part because the partInfo attribute is on
-        if object.TypeId=='App::Link':
-            self.calculatePartInfo(object.LinkedObject,level+1)
-        else:
-            if object.TypeId=='App::Part':
-                if (object.Label != 'Model') and (object.Type != 'Assembly') and (level > 0):
-                    try:
-                        # try to get partInfo in part
-                        for prop in self.infoKeysUser:
-                            getattr(object,self.infoKeysUser.get(prop).get('userData'))
-                        # Only if partInfo is complete the autoAttributes will get refreshed
-                        refresh(object)
-                        self.Verbose+='AutoAttributes have been recalculated for: ' + object.Label + '\n'
-                    except AttributeError:
-                        # If partInfo is not complete all non-custom attributes will be reseted
-                        self.Verbose+='You haven\'t filled the attribute field of this Part:'+ object.Label +'\n'
-                        crea(self,object)
-                        self.Verbose+='Attribute create for:'+ object.Label +'\n'
-                        fill(object)
-                        self.Verbose+='Attribute auto filled for:'+ object.Label+'\n'
-                    self.Verbose += '\n'
-                # look for sub-objects
-                for objname in object.getSubObjects():
-                    subobj = object.Document.getObject( objname[0:-1] )
-                    self.calculatePartInfo(subobj,level+1)
-        return
+    def calculateCountingAttr(self, object, quantity):
+        try:
+            price = self.PartsList[object.Label][self.infoKeysUser.get('PricePerPiece').get('userData')]
+            self.PartsList[object.Label]['PriceTotal'] = float(price) * quantity
+            pass
+        except:
+            print('Can not determine the price of part: ' + object.Label)
 
     def makeModelInfo(self, model, partList):
-        #TODO
-        pass
+        _modelName = model.Document.Label
+        self.PartsList[_modelName] = dict()
+        for prop in self.infoKeysUser:
+            self.PartsList[_modelName][self.infoKeysUser.get(prop).get('userData')] = ''
+
+        self.PartsList[_modelName][self.infoKeysUser.get('ModelName').get('userData')] = _modelName
+        self.PartsList[_modelName]['Quantity'] = 1
+        #PricePerPiece
+        price = 0
+        for objectName in partList:
+            try:
+                price += float(self.PartsList[objectName][self.infoKeysUser.get('PricePerPiece').get('userData')]) * partList[objectName]
+            except:
+                price = 'Unkown'
+                self.Verbose += 'Error in calculating price for model: ' + _modelName
+                break
+        self.PartsList[_modelName][self.infoKeysUser.get('PricePerPiece').get('userData')] = price
+        #Weight
+        weight = 0
+        for objectName in partList:
+            try:
+                weight += float(self.PartsList[objectName][self.infoKeysUser.get('Weight').get('userData')]) * partList[objectName]
+            except:
+                weight = 'Unkown'
+                self.Verbose += 'Error in calculating weight for model: ' + _modelName
+                break
+        self.PartsList[_modelName][self.infoKeysUser.get('Weight').get('userData')] = weight
 
     def listParts(self,object,level=0):
         file = open(ConfUserFilejson, 'r')
@@ -178,48 +162,68 @@ class makeBOM:
         if self.PartsList == None:
             self.PartsList = {}
         # Required for Model attributes
-        objectList = []
+        objectList = {}
         # research App::Part because the partInfo attribute is on
         if object.TypeId=='App::Link':
-            objectList.extend(self.listParts(object.LinkedObject,level+1))
+            self.extendAttrDict(objectList, self.listParts(object.LinkedObject,level+1))
         else:
             if object.TypeId=='App::Part':
                 # write PartsList
                 if object.Label == 'Model' or object.Type == 'Assembly':
-                    # look for sub-objects
-                    for objname in object.getSubObjects():
-                        subobj = object.Document.getObject( objname[0:-1] )
-                        objectList.extend(self.listParts(subobj,level+1))
-                    if object.Document.Label in self.PartsList:
-                        self.PartsList[object.Label]['Quantity'] += 1
-                    else:
-                        self.PartsList[object.Document.Label] = self.makeModelInfo(object, objectList)
+                    if True:
+                     # write model into PartList
+                        for objname in object.getSubObjects():
+                            subobj = object.Document.getObject( objname[0:-1] )
+                            self.extendAttrDict(objectList, self.listParts(subobj,level+1))
+                        if object.Document.Label in self.PartsList:
+                            self.PartsList[object.Document.Label]['Quantity'] += 1
+                        else:
+                            self.makeModelInfo(object, objectList)
                 else:
                     # test if the part already exist on PartsList
                     if object.Label in self.PartsList:
-                        self.PartsList[object.Label]['Quantity'] += 1
                         try:
-                            price = self.PartsList[object.Label][self.infoKeysUser.get('PricePerPiece').get('userData')]
-                            self.PartsList[object.Label]['PriceTotal'] = float(price) * int(self.PartsList[object.Label]['Quantity'])
+                            self.PartsList[object.Label]['Quantity'] += 1
                         except:
-                            pass
+                            self.PartsList[object.Label]['Quantity'] = 1
                     else:
                         # if not exist , create a dict() for this part
                         self.PartsList[object.Label] = dict()
+                        refreshed = False
                         for prop in self.infoKeysUser:
-                            try:
-                                if self.infoKeysUser.get(prop).get('active'):
+                            if self.infoKeysUser.get(prop).get('active'):
+                                try:
                                     # try to get partInfo in part
-                                    self.PartsList[object.Label][self.infoKeysUser.get(prop).get('userData')] = getattr(object,self.infoKeysUser.get(prop).get('userData'))
-                            except AttributeError:
-                                self.Verbose+='FATAL ERROR: PartInfo is not complete for Part:'+ object.Label +'\n'
+                                    getattr(object,self.infoKeysUser.get(prop).get('userData'))
+                                except AttributeError:
+                                    # If partInfo is not complete all non-custom attributes will be reseted
+                                    self.Verbose+='You haven\'t filled the attribute field of this Part:'+ object.Label +'\n'
+                                    crea(self,object)
+                                    self.Verbose+='Attribute create for:'+ object.Label +'\n'
+                                    fill(object)
+                                    self.Verbose+='Attribute auto filled for:'+ object.Label+'\n'
+                                    refreshed = True
+                                    break
+                        if not refreshed:
+                            refresh(object)
+                            self.Verbose+='AutoAttributes have been recalculated for: ' + object.Label + '\n'
+                        for prop in self.infoKeysUser:
+                            self.PartsList[object.Label][self.infoKeysUser.get(prop).get('userData')] = getattr(object,self.infoKeysUser.get(prop).get('userData'))
+                        self.Verbose += '\n'
+                        
                         self.PartsList[object.Label]['Quantity'] = 1
-                        try:
-                            price = self.PartsList[object.Label][self.infoKeysUser.get('PricePerPiece').get('userData')]
-                            self.PartsList[object.Label]['PriceTotal'] = price
-                        except:
-                            pass
-                        objectList.append(object.Label)
+
+                    self.calculateCountingAttr(object, int(self.PartsList[object.Label]['Quantity']))
+
+                    if object.Label in objectList:
+                        objectList[object.Label] += 1
+                    else:
+                        objectList[object.Label] = 1
+
+                    # look for sub-objects
+                    for objname in object.getSubObjects():
+                        subobj = object.Document.getObject( objname[0:-1] )
+                        self.extendAttrDict(objectList, self.listParts(subobj,level+1))
 
         return objectList
         self.Verbose+='Your Bill of Materials is Done\n'

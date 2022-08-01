@@ -83,6 +83,30 @@ def infoDefault(self):
     ### you have PART    
     DOC=PART.Document
     ### you have DOC
+    
+    ### start all autoinfofield
+    try :
+        ModelName(self,PART,DOC)
+    except NameError :
+        print('there is no DOC for this part : ',PART.FullName )
+    try :
+        PartName(self,PART)
+    except NameError :
+        print('there is no Part' )
+    try :
+        setAttributeToValue(self, PART, 'Density', 0.66)
+    except:
+        print('Error for attribute Density : ',PART.FullName )
+
+    calculateSizeInfo(self)
+
+    try :
+        setAttributeToValue(self, PART,'PricePerPiece', 0)
+    except:
+        print('Error for attribute PricePerPiece : ',PART.FullName )
+
+def calculateSizeInfo(self):
+    PART = self
     ### research
     for i in range(len(PART.Group)):
         if PART.Group[i].TypeId == 'PartDesign::Body' :
@@ -97,16 +121,6 @@ def infoDefault(self):
                         ### you have SKETCH
                     except NameError :
                         print('there is no Sketch on a Pad of : ',PART.FullName )
-
-    ### start all autoinfofield
-    try :
-        ModelName(self,PART,DOC)
-    except NameError :
-        print('there is no DOC for this part : ',PART.FullName )
-    try :
-        PartName(self,PART)
-    except NameError :
-        print('there is no Part' )
     try :    
         Thickness(self,PART,PAD)
     except NameError :
@@ -120,41 +134,9 @@ def infoDefault(self):
     except:
         print('there is no Shape on Volume : ',PART.FullName )
     try :
-        setAttributeToValue(self, PART, 'Density', 0.66)
-    except:
-        print('Error for attribute Density : ',PART.FullName )
-    try :
-        setAttributeToValue(self, PART,'PricePerPiece', 0)
-    except:
-        print('Error for attribute PricePerPiece : ',PART.FullName )
-    try :
         Weight(self, PART)
     except:
         print('Error for attribute Weight : ',PART.FullName )
-    try :
-        setAttributeToValue(self, PART, 'Quantity', 1)  # Initial value for a Part is 1
-    except:
-        print('Error for attribute Quantity : ',PART.FullName )
-    try :
-        setAttributeToValue(self, PART, 'PriceTotal', 0)
-    except:
-        print('Error for attribute PriceTotal : ',PART.FullName )
-
-def resetCountingAttr(self):
-    PART = self
-    if hasattr(PART, 'Quantity'):
-        setAttributeToValue(self, PART, 'Quantity', 0)
-
-def refreshSizeInfo(self):
-    PART = self
-    try:
-        newQuantity = int(getattr(PART, 'Quantity')) + 1
-        setAttributeToValue(self, PART, 'Quantity', newQuantity)
-        return
-    except:
-        newQuantity = 'Could not calculate Quantity'
-        setAttributeToValue(self, PART, 'Quantity', newQuantity)
-    #TODO restliches zeug neu berechnen
 
 def addAttrValueToModel(model, attrName, valueToAdd):
     try:
@@ -209,9 +191,22 @@ def Dimensions(self,PART, BODY):
     auto_info_field_z = infoKeysUser.get('DimZ').get('userData')
     auto_info_field_volume = infoKeysUser.get('Volume').get('userData')
     bbc = BODY.Shape.BoundBox
-    _x = math.ceil(bbc.XLength-0.01)
-    _y = math.ceil(bbc.YLength-0.01)
-    _z = math.ceil(bbc.ZLength-0.01)
+    _realX = round(bbc.XLength, 2)
+    _realY = round(bbc.YLength, 2)
+    _realZ = round(bbc.ZLength, 2)
+    _thickness = float(getattr(PART, infoKeysUser.get('Thickness').get('userData')))
+    #Swap dimensions to be more uniform (for cutlist)
+    _x = math.ceil(_realX)
+    _y = math.ceil(_realY)
+    _z = math.ceil(_realZ)
+    if _realX == _thickness:
+        _z = _x
+        _x = math.ceil(_realZ)
+    elif _realY == _thickness:
+        _z = _y
+        _y = math.ceil(_realZ)
+    elif _realZ == _thickness:
+        pass
     auto_info_fill_x = str(_x)
     auto_info_fill_y = str(_y)
     auto_info_fill_z = str(_z)
