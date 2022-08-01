@@ -184,15 +184,10 @@ class infoPartUI():
     # InfoDefault
     def infoDefault(self):
         InfoKeys.infoDefault(self)
-        #pass
-
-    # Resets counting attributes like Quantity
-    def resetCountingAttr(self):
-        InfoKeys.resetCountingAttr(self)
 
     # For attribute refreshing
     def refreshSizeInfo(self):
-        InfoKeys.refreshSizeInfo(self)
+        InfoKeys.calculateSizeInfo(self)
 
     # close
     def finish(self):
