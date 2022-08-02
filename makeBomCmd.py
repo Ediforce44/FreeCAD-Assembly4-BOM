@@ -270,19 +270,23 @@ class makeBOM:
             newData.append(nextEntry)
         return newData 
 
+    def seperateByThickness(self, dataDict):
+        seperatedParts = dict()
+        for i, _ in enumerate(dataDict):
+            partTickness = dataDict[i][self.infoKeysUser.get('Thickness').get('userData')]
+            if partTickness == '':
+                continue
+            if partTickness in seperatedParts:
+                seperatedParts[partTickness].append(dataDict[i])
+            else:
+                seperatedParts[partTickness] = [dataDict[i]]
+        return seperatedParts
+
     def cutOptFiles(self):
         document = App.ActiveDocument
         plist = self.PartsList
         if len(plist) == 0:
             return
-        cutlistName = 'CutList'
-        if not hasattr(document, cutlistName):
-            spreadsheet = document.addObject('Spreadsheet::Sheet', cutlistName)
-        else:
-            spreadsheet = getattr(document, cutlistName)
-        
-        spreadsheet.Label = cutlistName
-        spreadsheet.clearAll()
         def wrow(drow: [str], row: int):
             for i, d in enumerate(drow):
                 if row == 0:
@@ -296,10 +300,24 @@ class makeBOM:
             'Qty' : 'Quantity',
             'Label' : self.infoKeysUser.get('PartName').get('userData')}
         
-        filteredData = self.applyMask(data, cutOptMask, {'Enabled' : 1})
-        wrow(filteredData[0].keys(), 0)
-        for i, _ in enumerate(filteredData):
-            wrow(filteredData[i].values(), i+1)
+        groupedParts = self.seperateByThickness(data)
+        
+        allSpreadsheets = []
+
+        for tickness in groupedParts:
+            cutlistName = 'CutList_' + tickness
+            if not hasattr(document, cutlistName):
+                spreadsheet = document.addObject('Spreadsheet::Sheet', cutlistName)
+            else:
+                spreadsheet = getattr(document, cutlistName)
+            spreadsheet.Label = cutlistName
+            spreadsheet.clearAll()
+
+            filteredData = self.applyMask(groupedParts[tickness], cutOptMask, {'Enabled' : 1})
+            wrow(filteredData[0].keys(), 0)
+            for i, _ in enumerate(filteredData):
+                wrow(filteredData[i].values(), i+1)
+            allSpreadsheets.append(spreadsheet)
 
         document.recompute()
 
