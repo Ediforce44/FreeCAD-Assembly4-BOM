@@ -106,6 +106,7 @@ class makeBOM:
         self.PartsList = {}
         self.listParts(self.model)
         self.inSpreadsheet()
+        self.cutOptFiles()
         self.BOM.setPlainText(self.Verbose)
 
 ### def listParts use of Part info Edit
@@ -230,6 +231,81 @@ class makeBOM:
 
 ### def Copy - Copy on Spreadsheet
 
+    def applySimpleMask(self, dataDict, mask, constantDict={}):
+        newData = {}
+        for i, _ in enumerate(dataDict):
+            nextEntry = {}
+            if dataDict[i][self.infoKeysUser.get('PartName').get('userData')] == '':
+                # Skip all parts with empty PartName (especially Models)
+                continue
+            notFound = True
+            for dataKey in dataDict[i]:
+                if dataKey in mask:
+                    nextEntry[dataKey] = dataDict[i][dataKey]
+                    notFound = False
+            if notFound:
+                nextEntry[dataKey] = ''
+            for constantKey in constantDict:
+                nextEntry[constantKey] = constantDict[constantKey]
+            newData.append(nextEntry)
+        return newData 
+    
+    def applyMask(self, dataDict, maskDict, constantDict={}):
+        newData = []
+        for i, _ in enumerate(dataDict):
+            nextEntry = {}
+            if dataDict[i][self.infoKeysUser.get('PartName').get('userData')] == '':
+                # Skip all parts with empty PartName (especially Models)
+                continue
+            for newLabel in maskDict:
+                notFound = True
+                for dataKey in dataDict[i]:
+                    if dataKey == maskDict[newLabel]:
+                        nextEntry[newLabel] = dataDict[i][dataKey]
+                        notFound = False
+                if notFound:
+                    nextEntry[newLabel] = ''
+            for constantKey in constantDict:
+                nextEntry[constantKey] = constantDict[constantKey]
+            newData.append(nextEntry)
+        return newData 
+
+    def cutOptFiles(self):
+        document = App.ActiveDocument
+        plist = self.PartsList
+        if len(plist) == 0:
+            return
+        cutlistName = 'CutList'
+        if not hasattr(document, cutlistName):
+            spreadsheet = document.addObject('Spreadsheet::Sheet', cutlistName)
+        else:
+            spreadsheet = getattr(document, cutlistName)
+        
+        spreadsheet.Label = cutlistName
+        spreadsheet.clearAll()
+        def wrow(drow: [str], row: int):
+            for i, d in enumerate(drow):
+                if row == 0:
+                    spreadsheet.set(str(chr(ord('a') + i)).upper() + str(row + 1), infoPartCmd.decodeXml(str(d)))
+                else:
+                    spreadsheet.set(str(chr(ord('a') + i)).upper() + str(row + 1), str(d))
+        data = list(plist.values())
+        cutOptMask = {
+            'Length' : self.infoKeysUser.get('DimX').get('userData'),
+            'Width' : self.infoKeysUser.get('DimY').get('userData'),
+            'Qty' : 'Quantity',
+            'Label' : self.infoKeysUser.get('PartName').get('userData')}
+        
+        filteredData = self.applyMask(data, cutOptMask, {'Enabled' : 1})
+        wrow(filteredData[0].keys(), 0)
+        for i, _ in enumerate(filteredData):
+            wrow(filteredData[i].values(), i+1)
+
+        document.recompute()
+
+        self.Verbose += 'Cust-List spreadsheet has been successfully created\n'
+        self.Verbose += '\n'
+
     def inSpreadsheet(self):
         # Copies Parts List to Spreadsheet
         document = App.ActiveDocument
@@ -264,6 +340,7 @@ class makeBOM:
         document.recompute()
 
         self.Verbose+='Your Bill of Materials is Write on BOM Spreadsheet\n'
+        self.Verbose+= '\n'
 
 
     def onOK(self):
