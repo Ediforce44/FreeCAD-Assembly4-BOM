@@ -16,8 +16,9 @@ TODO
 - First of all create your model in FreeCAD like always and if it exist, delete your old BOM created with Assembly 4.
 - Then load your project for which you want to create the BOM.
 - Load the Assembly 4 workbench.
-- Click on the BOM button from Assembly 4:\
+- Click on the BOM button from Assembly 4:
 <img src="Resources/BOM-Button.png">
+
 - Then you have to select the folder in which the CSV files of the cutlists will be safed.
 - That's it! 
     - You can check if the BOM, the Cut-List Spreadsheets and the CSV files were created correctly.
