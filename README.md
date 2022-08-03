@@ -10,7 +10,23 @@ The BOM now also works with parametrization and variables.\
 The new mechanism also provides the creation of Cut-Lists ready for Tools like [Cutlist Optimizer](https://www.cutlistoptimizer.com/). For every different thickness of a Part a own Cut-List for this thickness is created.
 
 ## How to "install" this extension?
-TODO
+1. Install FreeCAD and the Assembly 4 workbench
+2. Download the 3 files from this repository
+3. Go to your "FreeCAD" folder that contains all the installed Addons:
+   
+   >**Windows:**\
+   > ``C:\Users\UserName\AppData\Roaming\FreeCAD``
+
+   >**Linux:**\
+   > ``/home/username/.FreeCAD``
+
+   It should look like this:
+   <img src="Resources/FreeCAD-Folder.png">
+4. Go to the `Templates` folder and make a backup of the file: ``Asm4_infoPartConf.json``
+   > This is important if you want to remove the changes if this extansion in the future or if something goes wrong.
+5. **Delete** the file ``Asm4_infoPartConf.json`` in your Templates folder
+6. Go to the folder ``Mod->Assembly4`` starting from your FreeCAD folder
+7. Paste the 3 files from this repository inside the Assembly4 folder and replace the existing files with the same name with them
 
 ## How to use the new BOM?
 - First of all create your model in FreeCAD like always and if it exist, delete your old BOM created with Assembly 4.
