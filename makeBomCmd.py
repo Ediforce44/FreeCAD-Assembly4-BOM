@@ -10,7 +10,11 @@
 import os
 import json
 
+import PySide
 from PySide import QtGui, QtCore
+from PySide.QtGui import *
+from PySide.QtCore import *
+
 import FreeCADGui as Gui
 import FreeCAD as App
 
@@ -100,13 +104,13 @@ class makeBOM:
             except:
                 print("Hum, this might not work")
         self.drawUI()
-        self.UI.show()
         self.BOM.clear()
         self.Verbose=str()
         self.PartsList = {}
         self.listParts(self.model)
         self.inSpreadsheet()
         self.cutOptFiles()
+        self.UI.show()
         self.BOM.setPlainText(self.Verbose)
 
 ### def listParts use of Part info Edit
@@ -273,14 +277,36 @@ class makeBOM:
     def seperateByThickness(self, dataDict):
         seperatedParts = dict()
         for i, _ in enumerate(dataDict):
-            partTickness = dataDict[i][self.infoKeysUser.get('Thickness').get('userData')]
-            if partTickness == '':
+            partThickness = dataDict[i][self.infoKeysUser.get('Thickness').get('userData')]
+            if partThickness == '':
                 continue
-            if partTickness in seperatedParts:
-                seperatedParts[partTickness].append(dataDict[i])
+            if partThickness in seperatedParts:
+                seperatedParts[partThickness].append(dataDict[i])
             else:
-                seperatedParts[partTickness] = [dataDict[i]]
+                seperatedParts[partThickness] = [dataDict[i]]
         return seperatedParts
+
+    def createCustListCSVFile(self, filePath, data, seperator=','):
+        try:
+            file = open(filePath, 'w')
+            try:
+                line = ''
+                for key in data[0]:
+                    line += str(key) + seperator
+                line = line[:-len(seperator)]
+                file.write(line)
+                for i, _ in enumerate(data):
+                    line = '\n'
+                    for value in data[i].values():
+                        line += str(value) + seperator
+                    line = line[:-len(seperator)]
+                    file.write(line)
+            except Exception:
+                App.Console.PrintError("Error write Cut-List file: " + filePath +"\n")
+            finally:
+                file.close()
+        except Exception:
+            App.Console.PrintError("Error Open file: "+ filePath +"\n")
 
     def cutOptFiles(self):
         document = App.ActiveDocument
@@ -293,6 +319,19 @@ class makeBOM:
                     spreadsheet.set(str(chr(ord('a') + i)).upper() + str(row + 1), infoPartCmd.decodeXml(str(d)))
                 else:
                     spreadsheet.set(str(chr(ord('a') + i)).upper() + str(row + 1), str(d))
+        
+        # Get file path for the Cut-List csv files
+        dirPath = App.ConfigGet("UserHomePath")
+        try:
+            dirPath = QFileDialog.getExistingDirectory(None, QString.fromLocal8Bit("Select a folder for the Cut-List files"), dirPath) # PyQt4
+            #                                                                     "here the text displayed on windows" "here the filter (extension)"   
+        except Exception:
+            dirPath = PySide.QtGui.QFileDialog.getExistingDirectory(None, "Select a folder for the Cut-List files", dirPath)
+        finally: 
+            if dirPath == '':
+                dirPath = App.ConfigGet("UserHomePath")
+
+        # Prepare PartList for seperating
         data = list(plist.values())
         cutOptMask = {
             'Length' : self.infoKeysUser.get('DimX').get('userData'),
@@ -301,27 +340,27 @@ class makeBOM:
             'Label' : self.infoKeysUser.get('PartName').get('userData')}
         
         groupedParts = self.seperateByThickness(data)
-        
-        allSpreadsheets = []
 
-        for tickness in groupedParts:
-            cutlistName = 'CutList_' + tickness
+        for thickness in groupedParts:
+            cutlistName = 'CutList_' + str(thickness)
+            filteredData = self.applyMask(groupedParts[thickness], cutOptMask, {'Enabled' : 1})
+            #Spreadsheets
             if not hasattr(document, cutlistName):
                 spreadsheet = document.addObject('Spreadsheet::Sheet', cutlistName)
             else:
                 spreadsheet = getattr(document, cutlistName)
             spreadsheet.Label = cutlistName
             spreadsheet.clearAll()
-
-            filteredData = self.applyMask(groupedParts[tickness], cutOptMask, {'Enabled' : 1})
             wrow(filteredData[0].keys(), 0)
             for i, _ in enumerate(filteredData):
                 wrow(filteredData[i].values(), i+1)
-            allSpreadsheets.append(spreadsheet)
+            #CSV Files
+            filePath = dirPath + '/' + cutlistName + '.csv'
+            self.createCustListCSVFile(filePath, filteredData, ',')
 
         document.recompute()
 
-        self.Verbose += 'Cust-List spreadsheet has been successfully created\n'
+        self.Verbose += 'Cust-List spreadsheet and CSV files has been successfully created\n'
         self.Verbose += '\n'
 
     def inSpreadsheet(self):
