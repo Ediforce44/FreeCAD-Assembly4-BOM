@@ -22,6 +22,8 @@ import Asm4_libs as Asm4
 import infoPartCmd
 import InfoKeys
 
+import math
+
 # protection against update of user configuration
 
 ### to have the dir of external configuration file
@@ -144,7 +146,7 @@ class makeBOM:
                 price += float(self.PartsList[objectName][self.infoKeysUser.get('PricePerPiece').get('userData')]) * partList[objectName]
             except:
                 price = 'Unkown'
-                self.Verbose += 'Error in calculating price for model: ' + _modelName
+                self.Verbose += 'Error in calculating price for model: ' + _modelName + '\n'
                 break
         self.PartsList[_modelName][self.infoKeysUser.get('PricePerPiece').get('userData')] = price
         #Weight
@@ -154,7 +156,7 @@ class makeBOM:
                 weight += float(self.PartsList[objectName][self.infoKeysUser.get('Weight').get('userData')]) * partList[objectName]
             except:
                 weight = 'Unkown'
-                self.Verbose += 'Error in calculating weight for model: ' + _modelName
+                self.Verbose += 'Error in calculating weight for model: ' + _modelName + '\n'
                 break
         self.PartsList[_modelName][self.infoKeysUser.get('Weight').get('userData')] = weight
 
@@ -277,9 +279,13 @@ class makeBOM:
     def seperateByThickness(self, dataDict):
         seperatedParts = dict()
         for i, _ in enumerate(dataDict):
-            partThickness = dataDict[i][self.infoKeysUser.get('Thickness').get('userData')]
+            partThickness = str(dataDict[i][self.infoKeysUser.get('Thickness').get('userData')]).replace(' ', '')
             if partThickness == '':
                 continue
+            try:
+                partThickness = str(math.ceil(float(partThickness)))
+            except:
+                pass
             if partThickness in seperatedParts:
                 seperatedParts[partThickness].append(dataDict[i])
             else:
