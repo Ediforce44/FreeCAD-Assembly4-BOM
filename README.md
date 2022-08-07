@@ -26,7 +26,7 @@ The new mechanism also provides the creation of Cut-Lists ready for Tools like [
    > This is important if you want to remove the changes if this extansion in the future or if something goes wrong.
 5. **Delete** the file ``Asm4_infoPartConf.json`` in your Templates folder
 6. Go to the folder ``Mod->Assembly4`` starting from your FreeCAD folder
-7. Paste the 3 files from this repository inside the Assembly4 folder and replace the existing files with the same name with them
+7. Paste the 3 files from this repository inside the Assembly4 folder and replace the existing files with the same name
 
 ## How to use the new BOM?
 - First of all create your model in FreeCAD like always and if it exist, delete your old BOM created with Assembly 4.
