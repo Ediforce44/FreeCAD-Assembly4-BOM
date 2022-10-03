@@ -187,15 +187,16 @@ class makeBOM:
                         else:
                             self.makeModelInfo(object, objectList)
                 else:
+                    entryName = object.Document.Label + "::" + object.Label
                     # test if the part already exist on PartsList
-                    if object.Label in self.PartsList:
+                    if entryName in self.PartsList:
                         try:
-                            self.PartsList[object.Label]['Quantity'] += 1
+                            self.PartsList[entryName]['Quantity'] += 1
                         except:
-                            self.PartsList[object.Label]['Quantity'] = 1
+                            self.PartsList[entryName]['Quantity'] = 1
                     else:
                         # if not exist , create a dict() for this part
-                        self.PartsList[object.Label] = dict()
+                        self.PartsList[entryName] = dict()
                         refreshed = False
                         for prop in self.infoKeysUser:
                             if self.infoKeysUser.get(prop).get('active'):
@@ -204,28 +205,28 @@ class makeBOM:
                                     getattr(object,self.infoKeysUser.get(prop).get('userData'))
                                 except AttributeError:
                                     # If partInfo is not complete all non-custom attributes will be reseted
-                                    self.Verbose+='You haven\'t filled the attribute field of this Part:'+ object.Label +'\n'
+                                    self.Verbose+='You haven\'t filled the attribute field of this Part:'+ entryName +'\n'
                                     crea(self,object)
-                                    self.Verbose+='Attribute create for:'+ object.Label +'\n'
+                                    self.Verbose+='Attribute create for:'+ entryName +'\n'
                                     fill(object)
-                                    self.Verbose+='Attribute auto filled for:'+ object.Label+'\n'
+                                    self.Verbose+='Attribute auto filled for:'+ entryName +'\n'
                                     refreshed = True
                                     break
                         if not refreshed:
                             refresh(object)
-                            self.Verbose+='AutoAttributes have been recalculated for: ' + object.Label + '\n'
+                            self.Verbose+='AutoAttributes have been recalculated for: ' + entryName + '\n'
                         for prop in self.infoKeysUser:
-                            self.PartsList[object.Label][self.infoKeysUser.get(prop).get('userData')] = getattr(object,self.infoKeysUser.get(prop).get('userData'))
+                            self.PartsList[entryName][self.infoKeysUser.get(prop).get('userData')] = getattr(object,self.infoKeysUser.get(prop).get('userData'))
                         self.Verbose += '\n'
                         
-                        self.PartsList[object.Label]['Quantity'] = 1
+                        self.PartsList[entryName]['Quantity'] = 1
 
-                    self.calculateCountingAttr(object, int(self.PartsList[object.Label]['Quantity']))
+                    self.calculateCountingAttr(object, int(self.PartsList[entryName]['Quantity']))
 
-                    if object.Label in objectList:
-                        objectList[object.Label] += 1
+                    if entryName in objectList:
+                        objectList[entryName] += 1
                     else:
-                        objectList[object.Label] = 1
+                        objectList[entryName] = 1
 
                     # look for sub-objects
                     for objname in object.getSubObjects():
