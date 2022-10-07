@@ -9,6 +9,8 @@ These files will extend the existing BOM/Bill of material function from Assembly
 The BOM now also works with parametrization and variables.\
 The new mechanism also provides the creation of Cut-Lists ready for Tools like [Cutlist Optimizer](https://www.cutlistoptimizer.com/). For every different thickness of a Part a own Cut-List for this thickness is created.
 
+There is a full [YouTube Video](https://youtu.be/HqAnKHmwbY4) out there, which describes the following steps aswell.
+
 ## How to "install" this extension?
 1. Install FreeCAD and the Assembly 4 workbench
 2. Download the 3 files from this repository
