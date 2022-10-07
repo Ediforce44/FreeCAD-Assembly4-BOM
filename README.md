@@ -11,6 +11,8 @@ The new mechanism also provides the creation of Cut-Lists ready for Tools like [
 
 There is a full [YouTube Video](https://youtu.be/HqAnKHmwbY4) out there, which describes the following steps aswell.
 
+Also take a look at the [FreeCAD forum](https://forum.freecadweb.org/viewtopic.php?f=20&t=72415).
+
 ## How to "install" this extension?
 1. Install FreeCAD and the Assembly 4 workbench
 2. Download the 3 files from this repository
