@@ -172,20 +172,20 @@ class makeBOM:
         objectList = {}
         # research App::Part because the partInfo attribute is on
         if object.TypeId=='App::Link':
-            self.extendAttrDict(objectList, self.listParts(object.LinkedObject,level+1))
+            if object.Visibility:
+                self.extendAttrDict(objectList, self.listParts(object.LinkedObject,level+1))
         else:
             if object.TypeId=='App::Part':
                 # write PartsList
                 if object.Label == 'Model' or object.Type == 'Assembly':
-                    if True:
-                     # write model into PartList
-                        for objname in object.getSubObjects():
-                            subobj = object.Document.getObject( objname[0:-1] )
-                            self.extendAttrDict(objectList, self.listParts(subobj,level+1))
-                        if object.Document.Label in self.PartsList:
-                            self.PartsList[object.Document.Label]['Quantity'] += 1
-                        else:
-                            self.makeModelInfo(object, objectList)
+                    # write model into PartList
+                    for objname in object.getSubObjects():
+                        subobj = object.Document.getObject( objname[0:-1] )
+                        self.extendAttrDict(objectList, self.listParts(subobj,level+1))
+                    if object.Document.Label in self.PartsList:
+                        self.PartsList[object.Document.Label]['Quantity'] += 1
+                    else:
+                        self.makeModelInfo(object, objectList)
                 else:
                     entryName = object.Document.Label + "::" + object.Label
                     # test if the part already exist on PartsList
